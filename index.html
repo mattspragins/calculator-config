@@ -5,14 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculator Configuration</title>
     
-    <!-- Load React production version -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Load Babel standalone -->
-    <script crossorigin src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
-    
-    <!-- Proper production Tailwind CSS -->
+    <!-- We're using modern script imports that work in all current browsers -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.2.0",
+            "react-dom/client": "https://esm.sh/react-dom@18.2.0/client"
+        }
+    }
+    </script>
+
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     
     <style>
@@ -24,44 +26,46 @@
 <body class="bg-gray-100">
     <div id="root"></div>
 
-    <script type="text/babel">
-        // Custom Button Component
-        const Button = ({ children, onClick, disabled, className = '' }) => (
-            <button
-                onClick={onClick}
-                disabled={disabled}
-                className={`px-4 py-2 rounded transition-colors ${className}`}
-            >
-                {children}
-            </button>
-        );
+    <!-- Using a module script eliminates the need for Babel -->
+    <script type="module">
+        import React from 'react';
+        import { createRoot } from 'react-dom/client';
 
-        // Custom Input Component
-        const Input = ({ label, type = 'text', value, onChange, placeholder = '' }) => (
-            <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {label}
-                </label>
-                <input
-                    type={type}
-                    value={value}
-                    onChange={onChange}
-                    placeholder={placeholder}
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-            </div>
-        );
+        // Our UI Components
+        const Button = ({ children, onClick, disabled, className = '' }) => {
+            return React.createElement('button', {
+                onClick,
+                disabled,
+                className: `px-4 py-2 rounded transition-colors ${className}`
+            }, children);
+        };
 
-        // Status Message Component
-        const StatusMessage = ({ message, isError }) => message ? (
-            <div className={`p-4 rounded mb-4 ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                {message}
-            </div>
-        ) : null;
+        const Input = ({ label, type = 'text', value, onChange, placeholder = '' }) => {
+            return React.createElement('div', { className: 'mb-4' }, [
+                React.createElement('label', { 
+                    className: 'block text-sm font-medium text-gray-700 mb-1',
+                    key: 'label'
+                }, label),
+                React.createElement('input', {
+                    key: 'input',
+                    type,
+                    value,
+                    onChange,
+                    placeholder,
+                    className: 'w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                })
+            ]);
+        };
+
+        const StatusMessage = ({ message, isError }) => {
+            if (!message) return null;
+            return React.createElement('div', {
+                className: `p-4 rounded mb-4 ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`
+            }, message);
+        };
 
         // Main App Component
         function App() {
-            // State for GitHub configuration
             const [githubConfig, setGithubConfig] = React.useState({
                 token: localStorage.getItem('githubToken') || '',
                 owner: localStorage.getItem('githubOwner') || '',
@@ -69,27 +73,19 @@
                 branch: localStorage.getItem('githubBranch') || 'main'
             });
 
-            // State for status messages
             const [status, setStatus] = React.useState({ message: '', isError: false });
             const [isLoading, setIsLoading] = React.useState(false);
 
-            // Save GitHub settings to localStorage
             const saveGitHubSettings = () => {
                 localStorage.setItem('githubToken', githubConfig.token);
                 localStorage.setItem('githubOwner', githubConfig.owner);
                 localStorage.setItem('githubRepo', githubConfig.repo);
                 localStorage.setItem('githubBranch', githubConfig.branch);
                 
-                setStatus({ 
-                    message: 'GitHub settings saved successfully!', 
-                    isError: false 
-                });
-                
-                // Clear success message after 3 seconds
+                setStatus({ message: 'GitHub settings saved successfully!', isError: false });
                 setTimeout(() => setStatus({ message: '', isError: false }), 3000);
             };
 
-            // Test GitHub connection
             const testGitHubConnection = async () => {
                 setIsLoading(true);
                 try {
@@ -104,101 +100,106 @@
                     );
 
                     if (!response.ok) throw new Error('Failed to connect to repository');
-
-                    setStatus({ 
-                        message: 'Successfully connected to GitHub repository!', 
-                        isError: false 
-                    });
+                    setStatus({ message: 'Successfully connected to GitHub repository!', isError: false });
                 } catch (error) {
-                    setStatus({ 
-                        message: `Error connecting to GitHub: ${error.message}`, 
-                        isError: true 
-                    });
+                    setStatus({ message: `Error connecting to GitHub: ${error.message}`, isError: true });
                 } finally {
                     setIsLoading(false);
-                    // Clear status after 5 seconds
                     setTimeout(() => setStatus({ message: '', isError: false }), 5000);
                 }
             };
 
-            // Update GitHub config fields
             const updateGitHubConfig = (field, value) => {
-                setGithubConfig(prev => ({
-                    ...prev,
-                    [field]: value
-                }));
+                setGithubConfig(prev => ({...prev, [field]: value }));
             };
 
-            return (
-                <div className="min-h-screen py-8">
-                    <div className="container mx-auto px-4">
-                        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-                            <div className="p-6 border-b border-gray-200">
-                                <h1 className="text-2xl font-bold">Calculator Configuration</h1>
-                                <StatusMessage message={status.message} isError={status.isError} />
-                            </div>
-                            
-                            <div className="p-6">
-                                <h2 className="text-xl font-semibold mb-4">GitHub Settings</h2>
-                                <div className={`space-y-4 ${isLoading ? 'loading' : ''}`}>
-                                    <Input
-                                        label="Personal Access Token"
-                                        type="password"
-                                        value={githubConfig.token}
-                                        onChange={(e) => updateGitHubConfig('token', e.target.value)}
-                                        placeholder="ghp_your_token_here"
-                                    />
-                                    
-                                    <Input
-                                        label="Repository Owner"
-                                        value={githubConfig.owner}
-                                        onChange={(e) => updateGitHubConfig('owner', e.target.value)}
-                                        placeholder="Your GitHub username"
-                                    />
-                                    
-                                    <Input
-                                        label="Repository Name"
-                                        value={githubConfig.repo}
-                                        onChange={(e) => updateGitHubConfig('repo', e.target.value)}
-                                        placeholder="calculator"
-                                    />
-                                    
-                                    <Input
-                                        label="Branch Name"
-                                        value={githubConfig.branch}
-                                        onChange={(e) => updateGitHubConfig('branch', e.target.value)}
-                                        placeholder="main"
-                                    />
-                                    
-                                    <div className="flex space-x-4 pt-4">
-                                        <Button
-                                            onClick={saveGitHubSettings}
-                                            disabled={isLoading}
-                                            className="bg-blue-500 text-white hover:bg-blue-600"
-                                        >
-                                            Save Settings
-                                        </Button>
-                                        
-                                        <Button
-                                            onClick={testGitHubConnection}
-                                            disabled={isLoading}
-                                            className="bg-green-500 text-white hover:bg-green-600"
-                                        >
-                                            Test Connection
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            // Using createElement for better browser compatibility
+            return React.createElement('div', { className: 'min-h-screen py-8' }, 
+                React.createElement('div', { className: 'container mx-auto px-4' },
+                    React.createElement('div', { className: 'max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden' }, [
+                        React.createElement('div', { 
+                            key: 'header',
+                            className: 'p-6 border-b border-gray-200' 
+                        }, [
+                            React.createElement('h1', { 
+                                key: 'title',
+                                className: 'text-2xl font-bold' 
+                            }, 'Calculator Configuration'),
+                            React.createElement(StatusMessage, {
+                                key: 'status',
+                                message: status.message,
+                                isError: status.isError
+                            })
+                        ]),
+                        React.createElement('div', { 
+                            key: 'content',
+                            className: 'p-6' 
+                        }, [
+                            React.createElement('h2', { 
+                                key: 'subtitle',
+                                className: 'text-xl font-semibold mb-4' 
+                            }, 'GitHub Settings'),
+                            React.createElement('div', { 
+                                key: 'form',
+                                className: `space-y-4 ${isLoading ? 'loading' : ''}` 
+                            }, [
+                                React.createElement(Input, {
+                                    key: 'token',
+                                    label: 'Personal Access Token',
+                                    type: 'password',
+                                    value: githubConfig.token,
+                                    onChange: (e) => updateGitHubConfig('token', e.target.value),
+                                    placeholder: 'ghp_your_token_here'
+                                }),
+                                React.createElement(Input, {
+                                    key: 'owner',
+                                    label: 'Repository Owner',
+                                    value: githubConfig.owner,
+                                    onChange: (e) => updateGitHubConfig('owner', e.target.value),
+                                    placeholder: 'Your GitHub username'
+                                }),
+                                React.createElement(Input, {
+                                    key: 'repo',
+                                    label: 'Repository Name',
+                                    value: githubConfig.repo,
+                                    onChange: (e) => updateGitHubConfig('repo', e.target.value),
+                                    placeholder: 'calculator'
+                                }),
+                                React.createElement(Input, {
+                                    key: 'branch',
+                                    label: 'Branch Name',
+                                    value: githubConfig.branch,
+                                    onChange: (e) => updateGitHubConfig('branch', e.target.value),
+                                    placeholder: 'main'
+                                }),
+                                React.createElement('div', { 
+                                    key: 'buttons',
+                                    className: 'flex space-x-4 pt-4' 
+                                }, [
+                                    React.createElement(Button, {
+                                        key: 'save',
+                                        onClick: saveGitHubSettings,
+                                        disabled: isLoading,
+                                        className: 'bg-blue-500 text-white hover:bg-blue-600'
+                                    }, 'Save Settings'),
+                                    React.createElement(Button, {
+                                        key: 'test',
+                                        onClick: testGitHubConnection,
+                                        disabled: isLoading,
+                                        className: 'bg-green-500 text-white hover:bg-green-600'
+                                    }, 'Test Connection')
+                                ])
+                            ])
+                        ])
+                    ])
+                )
             );
         }
 
         // Mount the application
         const container = document.getElementById('root');
-        const root = ReactDOM.createRoot(container);
-        root.render(<App />);
+        const root = createRoot(container);
+        root.render(React.createElement(App));
     </script>
 </body>
 </html>
