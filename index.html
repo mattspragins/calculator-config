@@ -4,27 +4,87 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rolling Suds Calculator Configuration</title>
+    
     <!-- Import Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Import React and ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Import Babel for JSX -->
-    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <!-- Import Lucide Icons -->
-    <script src="https://unpkg.com/lucide@0.263.1"></script>
-    <!-- Add custom styles -->
-    <style>
-        .hidden {
-            display: none;
-        }
-        /* Add any additional custom styles here */
-    </style>
+    
+    <!-- React Dependencies -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-gray-100 min-h-screen py-8">
-    <div id="root" class="container mx-auto px-4"></div>
-    
+    <div id="root"></div>
+
     <!-- Import your React components -->
+    <script type="text/babel">
+        // UI Components
+        const Card = ({ children, className = '' }) => (
+            <div className={`bg-white rounded-lg shadow-lg ${className}`}>{children}</div>
+        );
+
+        const CardHeader = ({ children }) => (
+            <div className="p-6 border-b border-gray-200">{children}</div>
+        );
+
+        const CardTitle = ({ children }) => (
+            <h2 className="text-2xl font-bold">{children}</h2>
+        );
+
+        const CardContent = ({ children }) => (
+            <div className="p-6">{children}</div>
+        );
+
+        const Button = ({ children, onClick, className = '', disabled = false }) => (
+            <button 
+                onClick={onClick}
+                disabled={disabled}
+                className={`px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 ${className}`}
+            >
+                {children}
+            </button>
+        );
+
+        const Input = ({ type = 'text', value, onChange, className = '' }) => (
+            <input 
+                type={type}
+                value={value}
+                onChange={onChange}
+                className={`w-full p-2 border rounded ${className}`}
+            />
+        );
+
+        const Label = ({ children }) => (
+            <label className="block mb-2 font-medium">{children}</label>
+        );
+
+        // Main App Component
+        function App() {
+            const [message, setMessage] = React.useState("Configuration Interface Loading...");
+            
+            return (
+                <div className="container mx-auto px-4">
+                    <Card className="max-w-4xl mx-auto">
+                        <CardHeader>
+                            <CardTitle>Rolling Suds Calculator Configuration</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {message}
+                        </CardContent>
+                    </Card>
+                </div>
+            );
+        }
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+
+    <!-- Once the basic setup is confirmed working, we'll load the full interface -->
     <script type="text/babel" src="config-interface.js"></script>
 </body>
 </html>
