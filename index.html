@@ -5,76 +5,213 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rolling Suds Calculator Configuration</title>
     
-    <!-- Import Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React Dependencies -->
+    <!-- React and ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen py-8">
     <div id="root"></div>
 
-    <!-- Import your React components -->
     <script type="text/babel">
-        // UI Components
-        const Card = ({ children, className = '' }) => (
-            <div className={`bg-white rounded-lg shadow-lg ${className}`}>{children}</div>
-        );
-
-        const CardHeader = ({ children }) => (
-            <div className="p-6 border-b border-gray-200">{children}</div>
-        );
-
-        const CardTitle = ({ children }) => (
-            <h2 className="text-2xl font-bold">{children}</h2>
-        );
-
-        const CardContent = ({ children }) => (
-            <div className="p-6">{children}</div>
-        );
-
-        const Button = ({ children, onClick, className = '', disabled = false }) => (
-            <button 
-                onClick={onClick}
-                disabled={disabled}
-                className={`px-4 py-2 rounded bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 ${className}`}
-            >
-                {children}
-            </button>
-        );
-
-        const Input = ({ type = 'text', value, onChange, className = '' }) => (
-            <input 
-                type={type}
-                value={value}
-                onChange={onChange}
-                className={`w-full p-2 border rounded ${className}`}
-            />
-        );
-
-        const Label = ({ children }) => (
-            <label className="block mb-2 font-medium">{children}</label>
-        );
-
-        // Main App Component
+        // Main Configuration Interface Component
         function App() {
-            const [message, setMessage] = React.useState("Configuration Interface Loading...");
-            
+            const [config, setConfig] = React.useState({
+                materialRates: {
+                    vinyl: {
+                        buildingsPerDay: 6,
+                        pricePerBuilding: 450,
+                        description: "Standard vinyl siding"
+                    },
+                    hardie: {
+                        buildingsPerDay: 5,
+                        pricePerBuilding: 565,
+                        description: "HardiePlank fiber cement siding"
+                    }
+                },
+                heightMultipliers: {
+                    "2": { timeMultiplier: 1.0, priceMultiplier: 1.0 },
+                    "3": { timeMultiplier: 0.6, priceMultiplier: 1.67 },
+                    "4": { timeMultiplier: 0.5, priceMultiplier: 2.0 }
+                },
+                settings: {
+                    baselineRevenue: 2250,
+                    minBuildingsPerDay: 1,
+                    roundingPrecision: 100,
+                    scaleMultiplierPrecision: 2
+                }
+            });
+
+            const [githubConfig, setGithubConfig] = React.useState({
+                token: localStorage.getItem('githubToken') || '',
+                owner: localStorage.getItem('githubOwner') || '',
+                repo: localStorage.getItem('githubRepo') || '',
+                branch: localStorage.getItem('githubBranch') || 'main'
+            });
+
+            const [activeTab, setActiveTab] = React.useState('materials');
+            const [status, setStatus] = React.useState({ message: '', error: false });
+
+            // Save to GitHub function
+            const saveToGitHub = async () => {
+                if (!githubConfig.token || !githubConfig.owner || !githubConfig.repo) {
+                    setStatus({ message: 'Please configure GitHub settings first', error: true });
+                    return;
+                }
+
+                try {
+                    setStatus({ message: 'Saving to GitHub...', error: false });
+                    const content = `const calculatorConfig = ${JSON.stringify(config, null, 2)};\n\nexport default calculatorConfig;`;
+                    const encodedContent = btoa(unescape(encodeURIComponent(content)));
+
+                    // Get the current file (if it exists)
+                    const getFileUrl = `https://api.github.com/repos/${githubConfig.owner}/${githubConfig.repo}/contents/config.js`;
+                    const getFileResponse = await fetch(getFileUrl, {
+                        headers: {
+                            'Authorization': `token ${githubConfig.token}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    const fileData = await getFileResponse.json();
+                    const sha = getFileResponse.ok ? fileData.sha : null;
+
+                    // Update or create the file
+                    const response = await fetch(getFileUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${githubConfig.token}`,
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: 'Update calculator configuration',
+                            content: encodedContent,
+                            sha: sha,
+                            branch: githubConfig.branch
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to save to GitHub');
+                    setStatus({ message: 'Successfully saved to GitHub!', error: false });
+                    
+                    setTimeout(() => setStatus({ message: '', error: false }), 3000);
+                } catch (error) {
+                    setStatus({ message: 'Error saving to GitHub: ' + error.message, error: true });
+                }
+            };
+
+            // Save GitHub settings
+            const saveGitHubSettings = () => {
+                localStorage.setItem('githubToken', githubConfig.token);
+                localStorage.setItem('githubOwner', githubConfig.owner);
+                localStorage.setItem('githubRepo', githubConfig.repo);
+                localStorage.setItem('githubBranch', githubConfig.branch);
+                setStatus({ message: 'GitHub settings saved!', error: false });
+                setTimeout(() => setStatus({ message: '', error: false }), 3000);
+            };
+
             return (
                 <div className="container mx-auto px-4">
-                    <Card className="max-w-4xl mx-auto">
-                        <CardHeader>
-                            <CardTitle>Rolling Suds Calculator Configuration</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {message}
-                        </CardContent>
-                    </Card>
+                    <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg">
+                        <div className="p-6 border-b border-gray-200">
+                            <h1 className="text-2xl font-bold">Calculator Configuration</h1>
+                            {status.message && (
+                                <div className={`mt-4 p-2 rounded ${status.error ? 'bg-red-100' : 'bg-green-100'}`}>
+                                    {status.message}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="p-6">
+                            <div className="mb-6">
+                                <div className="flex space-x-4 border-b">
+                                    {['materials', 'height', 'settings', 'github'].map((tab) => (
+                                        <button
+                                            key={tab}
+                                            onClick={() => setActiveTab(tab)}
+                                            className={`px-4 py-2 ${activeTab === tab 
+                                                ? 'border-b-2 border-blue-500 text-blue-500' 
+                                                : 'text-gray-500'}`}
+                                        >
+                                            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {activeTab === 'github' && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block mb-2">GitHub Token</label>
+                                        <input
+                                            type="password"
+                                            className="w-full p-2 border rounded"
+                                            value={githubConfig.token}
+                                            onChange={(e) => setGithubConfig({
+                                                ...githubConfig,
+                                                token: e.target.value
+                                            })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2">Repository Owner</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 border rounded"
+                                            value={githubConfig.owner}
+                                            onChange={(e) => setGithubConfig({
+                                                ...githubConfig,
+                                                owner: e.target.value
+                                            })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2">Repository Name</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 border rounded"
+                                            value={githubConfig.repo}
+                                            onChange={(e) => setGithubConfig({
+                                                ...githubConfig,
+                                                repo: e.target.value
+                                            })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block mb-2">Branch Name</label>
+                                        <input
+                                            type="text"
+                                            className="w-full p-2 border rounded"
+                                            value={githubConfig.branch}
+                                            onChange={(e) => setGithubConfig({
+                                                ...githubConfig,
+                                                branch: e.target.value
+                                            })}
+                                        />
+                                    </div>
+                                    <div className="flex space-x-4">
+                                        <button
+                                            onClick={saveGitHubSettings}
+                                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                                        >
+                                            Save Settings
+                                        </button>
+                                        <button
+                                            onClick={saveToGitHub}
+                                            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                        >
+                                            Save Configuration to GitHub
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Add other tab content here as needed */}
+                        </div>
+                    </div>
                 </div>
             );
         }
@@ -83,8 +220,5 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
-
-    <!-- Once the basic setup is confirmed working, we'll load the full interface -->
-    <script type="text/babel" src="config-interface.js"></script>
 </body>
 </html>
